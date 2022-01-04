@@ -17,6 +17,7 @@ running = True
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
 
 
 class Player:
@@ -27,46 +28,57 @@ class Player:
         self.height = 50
         self.player = self.render()
         self.attacking = False
-        self.tiro = None
+        self.shoot = None
+        self.shoot_y = None
+        self.shoot_x = None
+        self.speed = 0.2
+        self.left_point = (self.x - self.width / 2, self.y + self.height)
+        self.right_point = (self.x + self.width / 2, self.y + self.height)
 
     def update(self):
-        keys_pressed = pygame.key.get_pressed()
-        if keys_pressed[K_RIGHT]:
-            self.x += 0.5
-        if keys_pressed[K_LEFT]:
-            self.x -= 0.5
-        if keys_pressed[K_UP]:
-            self.attacking = True
-            shoot = Shoot()
-        if self.attacking:
-            shoot.update()
+        pressed_keys = pygame.key.get_pressed()
+        if pressed_keys[K_RIGHT] and self.right_point[0] < WIDTH:
+            self.x += self.speed
+        if pressed_keys[K_LEFT] and self.left_point[0] > 0:
+            self.x -= self.speed
 
     def render(self):
         medium_point = (self.x, self.y)
-        left_point = (self.x - self.width / 2, self.y + self.height)
-        right_point = (self.x + self.width / 2, self.y + self.height)
-        triangle = pygame.draw.polygon(SCREEN, WHITE, (left_point, medium_point, right_point))
+        self.left_point = (self.x - self.width / 2, self.y + self.height)
+        self.right_point = (self.x + self.width / 2, self.y + self.height)
+        triangle = pygame.draw.polygon(SCREEN, WHITE, (self.left_point, medium_point, self.right_point))
         return triangle
+
+
+player = Player(WIDTH / 2 - 25, HEIGHT - 50)
 
 
 class Shoot:
     def __init__(self):
-        self.radius = 5
-        self.x = 0
-        self.y = 0
-        self.tiro = None
-
-    def attack(self):
-        initial_point = (player.x, player.y)
-        self.y = player.y
-        self.x = player.x
-        self.tiro = pygame.draw.circle(SCREEN, WHITE, initial_point, 5)
+        self.y = 100
+        self.x = 100
+        self.center = (0, 0)
+        self.radius = 10
+        self.attacking = False
 
     def update(self):
-        self.y -= 1
+        if self.attacking:
+            self.y -= 0.1
+
+        if self.y - self.radius <= 0:
+            self.attacking = False
+
+    def render(self):
+        if self.attacking:
+            pygame.draw.circle(SCREEN, BLUE, (self.x, self.y), self.radius)
+
+    def attack(self, center_x, center_y):
+        self.attacking = True
+        self.x = center_x
+        self.y = center_y
 
 
-player = Player(WIDTH / 2 - 25, HEIGHT - 50)
+shoot = Shoot()
 
 while running:
 
@@ -75,9 +87,13 @@ while running:
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
-
+    keys_pressed = pygame.key.get_pressed()
+    if keys_pressed[K_SPACE] and not shoot.attacking:
+        shoot.attack(player.x, player.y)
     player.update()
     player.render()
+    shoot.update()
+    shoot.render()
 
     pygame.display.flip()
 
